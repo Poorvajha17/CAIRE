@@ -165,7 +165,7 @@ class FeatureEngineeringTab(BaseTab):
             info_box("Run feature engineering to generate featured data")
             return
 
-        sub_tabs = st.tabs(["🆕 New Features", "📐 PCA Results"])
+        sub_tabs = st.tabs(["🆕 New Features"])
 
         with sub_tabs[0]:
             create_section("Newly Added Features", "🆕")
@@ -173,7 +173,7 @@ class FeatureEngineeringTab(BaseTab):
                 "engagement_intensity", "scroll_engagement", "is_weekend",
                 "has_multiple_items", "has_high_engagement", "research_behavior",
                 "quick_browse", "engagement_score", "peak_hours", "returning_peak",
-                "day_sin", "day_cos", "time_sin", "time_cos", "pca1", "pca2"
+                "day_sin", "day_cos", "time_sin", "time_cos"
             ]
 
             added = [f for f in new_features if f in df.columns]
@@ -209,51 +209,6 @@ class FeatureEngineeringTab(BaseTab):
                 file_name="cart_abandonment_featured.csv",
                 mime="text/csv",
             )
-
-        with sub_tabs[1]:
-            create_section("PCA Projection (2D)", "📐")
-
-            if "pca1" in df.columns and "pca2" in df.columns:
-                import matplotlib.pyplot as plt
-                import seaborn as sns
-                
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sns.scatterplot(
-                    data=df, x="pca1", y="pca2",
-                    hue="abandoned" if "abandoned" in df.columns else None,
-                    palette="Set2", alpha=0.7, s=100
-                )
-                ax.set_title("PCA Scatter Plot (pca1 vs pca2)", fontsize=14, fontweight='bold')
-                ax.set_facecolor('#1e293b')
-                fig.patch.set_facecolor('#0f172a')
-                st.pyplot(fig)
-
-                info_box("""
-                **PCA Analysis:**
-                - PCA1 captures the largest variance in user session behavior
-                - Clear separation between abandoned vs non-abandoned sessions
-                - PCA2 provides complementary variance
-                """)
-
-                if os.path.exists(PCA_LOADINGS_PATH):
-                    loadings = pd.read_csv(PCA_LOADINGS_PATH, index_col=0)
-                    create_section("PCA Feature Contributions", "📊")
-                    st.write("**Contribution of original features to PC1 and PC2**")
-
-                    create_comparison_table(loadings)
-
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.markdown("**Top Contributors to PC1:**")
-                        st.dataframe(loadings["PC1"].abs().sort_values(ascending=False).head(5))
-                    with col2:
-                        st.markdown("**Top Contributors to PC2:**")
-                        st.dataframe(loadings["PC2"].abs().sort_values(ascending=False).head(5))
-                else:
-                    warning_box("PCA loadings not found. Please rerun feature engineering.")
-            else:
-                warning_box("PCA components not found in dataset.")
-
 
 class CartAbandonmentDashboard:
     def __init__(self):

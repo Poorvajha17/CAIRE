@@ -14,14 +14,12 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 RNG = np.random.RandomState(42)
 random.seed(42)
 
-# ============================================================================
-# BEST PARAMETERS STORAGE - For future use
-# ============================================================================
+
 BEST_MODEL_PARAMS = {
-    "model_type": None,  # Will be set after grid search: "GradientBoostingClassifierManual" or "RandomForestManual"
-    "parameters": None,  # Will contain the actual best parameters dict
-    "performance": None, # Will contain test metrics
-    "feature_names": None, # Will be set from data
+    "model_type": None, 
+    "parameters": None, 
+    "performance": None, 
+    "feature_names": None,
     "grid_search_completed": False
 }
 
@@ -72,9 +70,6 @@ def print_best_params():
         for metric, score in BEST_MODEL_PARAMS["performance"].items():
             print(f"  {metric}: {score:.4f}")
 
-# ============================================================================
-# ORIGINAL CODE (all your existing functions and classes)
-# ============================================================================
 def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
@@ -561,14 +556,11 @@ def load_featured_data(path=None):
     """
     if path is None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        # model.py is outside data folder, so data folder is in the same directory as model.py
         path = os.path.join(current_dir, "data", "cart_abandonment_featured.csv")
     
     print(f"Loading data from: {path}")
     
-    # Check if file exists
     if not os.path.exists(path):
-        # List available files for debugging
         data_dir = os.path.dirname(path)
         if os.path.exists(data_dir):
             available_files = os.listdir(data_dir)
@@ -594,7 +586,6 @@ def load_featured_data(path=None):
 def main():
     X_all, y_all, feature_names = load_featured_data()
     
-    # Update feature names in BEST_MODEL_PARAMS
     BEST_MODEL_PARAMS["feature_names"] = feature_names
 
     print("N samples:", X_all.shape[0], "N features:", X_all.shape[1])
@@ -640,14 +631,12 @@ def main():
         print("Selecting Gradient Boosting as final")
         final_model = GradientBoostingClassifierManual(**best_gb_params)
         final_model.fit_with_baseline(X_train, y_train)
-        # STORE THE BEST PARAMETERS
         BEST_MODEL_PARAMS["model_type"] = "GradientBoostingClassifierManual"
         BEST_MODEL_PARAMS["parameters"] = best_gb_params
     else:
         print("Selecting Random Forest as final")
         final_model = RandomForestManual(**best_rf_params)
         final_model.fit(X_train, y_train)
-        # STORE THE BEST PARAMETERS
         BEST_MODEL_PARAMS["model_type"] = "RandomForestManual"
         BEST_MODEL_PARAMS["parameters"] = best_rf_params
 
@@ -682,13 +671,10 @@ def main():
         pickle.dump({
             "model": final_model,
             "feature_names": feature_names,
-            "best_params": BEST_MODEL_PARAMS  # Also save best params in the pickle
+            "best_params": BEST_MODEL_PARAMS 
         }, f)
     print(f"Saved final model to {model_path}")
 
-# ============================================================================
-# QUICK TRAINING FUNCTION USING STORED PARAMETERS
-# ============================================================================
 def quick_train_with_best_params(data_path=None, save_model=True):
     """
     Quick training function that uses the stored best parameters
@@ -719,7 +705,6 @@ def quick_train_with_best_params(data_path=None, save_model=True):
     else:
         final_model.fit(X_train, y_train)
     
-    # Evaluate
     try:
         y_score_test = final_model.predict_proba(X_test)
     except Exception:
@@ -754,12 +739,8 @@ def quick_train_with_best_params(data_path=None, save_model=True):
 if __name__ == "__main__":
     main()
     
-    # After running main(), you can use this to see the stored parameters:
     print("\n" + "="*60)
     print("ACCESSING STORED PARAMETERS:")
     stored_params = get_best_params()
     print(f"Best model type: {stored_params['model_type']}")
     print(f"Best parameters: {stored_params['parameters']}")
-    
-    # Example of quick training for future use:
-    # quick_train_with_best_params()

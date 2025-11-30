@@ -68,75 +68,6 @@ class ModelingEvaluationTab:
             st.error(f"❌ Error evaluating {model_name}: {str(e)}")
             return None
 
-    def plot_roc_curves(self):
-        """Plot ROC curves for all trained models"""
-        if not self.results:
-            return
-        
-        fig = go.Figure()
-        
-        for model_name, result in self.results.items():
-            y_true = result['y_true']
-            y_proba = result['y_proba']
-            
-            fpr, tpr, _ = roc_curve(y_true, y_proba)
-            auc_score = result['metrics']['roc_auc']
-            
-            fig.add_trace(go.Scatter(
-                x=fpr, y=tpr,
-                name=f'{model_name} (AUC = {auc_score:.3f})',
-                line=dict(width=2)
-            ))
-        
-        fig.add_trace(go.Scatter(
-            x=[0, 1], y=[0, 1],
-            line=dict(dash='dash', color='gray'),
-            name='Random Classifier',
-            showlegend=False
-        ))
-        
-        fig.update_layout(
-            title='📈 ROC Curves - Model Comparison',
-            xaxis_title='False Positive Rate',
-            yaxis_title='True Positive Rate',
-            width=700,
-            height=500,
-            showlegend=True
-        )
-        
-        st.plotly_chart(fig)
-
-    def plot_pr_curves(self):
-        """Plot Precision-Recall curves for all trained models"""
-        if not self.results:
-            return
-        
-        fig = go.Figure()
-        
-        for model_name, result in self.results.items():
-            y_true = result['y_true']
-            y_proba = result['y_proba']
-            
-            precision, recall, _ = precision_recall_curve(y_true, y_proba)
-            f1_score = result['metrics']['f1_score']
-            
-            fig.add_trace(go.Scatter(
-                x=recall, y=precision,
-                name=f'{model_name} (F1 = {f1_score:.3f})',
-                line=dict(width=2)
-            ))
-        
-        fig.update_layout(
-            title='📊 Precision-Recall Curves',
-            xaxis_title='Recall',
-            yaxis_title='Precision',
-            width=700,
-            height=500,
-            showlegend=True
-        )
-        
-        st.plotly_chart(fig)
-
     def plot_confusion_matrices(self):
         """Plot confusion matrices for all models"""
         if not self.results:
@@ -213,94 +144,6 @@ class ModelingEvaluationTab:
         
         best_df = pd.DataFrame(list(best_models.items()), columns=['Metric', 'Best Model'])
         st.dataframe(best_df, width='stretch')
-
-    def calculate_feature_importance(self, model, feature_names, model_name):
-        """Calculate feature importance for tree-based models"""
-        try:
-            if hasattr(model, 'trees') and model.trees:
-                feature_importance = np.zeros(len(feature_names))
-                total_splits = 0
-                
-                for tree in model.trees:
-                    feature_usage = self._count_feature_usage(tree.tree, len(feature_names))
-                    feature_importance += feature_usage
-                    total_splits += np.sum(feature_usage > 0)
-                
-                if total_splits > 0:
-                    feature_importance = feature_importance / total_splits
-                return feature_importance
-            
-            elif hasattr(model, 'tree'):
-                feature_importance = self._count_feature_usage(model.tree, len(feature_names))
-                total_splits = np.sum(feature_importance > 0)
-                if total_splits > 0:
-                    feature_importance = feature_importance / total_splits
-                return feature_importance
-            
-            else:
-                return None
-                
-        except Exception as e:
-            st.warning(f"Could not calculate feature importance for {model_name}: {e}")
-            return None
-
-    def _count_feature_usage(self, node, n_features):
-        """Recursively count feature usage in decision tree nodes"""
-        feature_usage = np.zeros(n_features)
-        
-        if not node.get("is_leaf", True):
-            feature_idx = node.get("feature")
-            if feature_idx is not None and feature_idx < n_features:
-                feature_usage[feature_idx] += 1
-            
-            if "left" in node:
-                feature_usage += self._count_feature_usage(node["left"], n_features)
-            if "right" in node:
-                feature_usage += self._count_feature_usage(node["right"], n_features)
-        
-        return feature_usage
-
-    def plot_feature_importance(self, model, feature_names, model_name):
-        """Plot feature importance for tree-based models"""
-        try:
-            importance_scores = self.calculate_feature_importance(model, feature_names, model_name)
-            
-            if importance_scores is None or np.sum(importance_scores) == 0:
-                st.info(f"📊 Feature importance not available for {model_name}")
-                return
-            
-            feat_imp_df = pd.DataFrame({
-                'feature': feature_names,
-                'importance': importance_scores
-            }).sort_values('importance', ascending=True)
-            
-            non_zero_features = feat_imp_df[feat_imp_df['importance'] > 0]
-            if len(non_zero_features) == 0:
-                st.info(f"📊 No feature importance data available for {model_name}")
-                return
-            
-            top_features = non_zero_features.tail(15)  # Top 15 features
-            
-            fig = px.bar(
-                top_features,
-                x='importance',
-                y='feature',
-                orientation='h',
-                title=f'🔍 {model_name} - Feature Importance (Top 15)',
-                color='importance',
-                color_continuous_scale='viridis'
-            )
-            
-            fig.update_layout(
-                yaxis={'categoryorder': 'total ascending'},
-                height=500,
-                showlegend=False
-            )
-            
-            st.plotly_chart(fig)
-            
-        except Exception as e:
-            st.info(f"📊 Feature importance analysis not available for {model_name}")
 
     def run(self):
         st.header("🤖 Modeling & Evaluation")
@@ -434,28 +277,10 @@ class ModelingEvaluationTab:
             
             self.display_metrics_comparison()
             
-            eval_tabs = st.tabs(["📈 ROC Curves", "📊 PR Curves", "🎯 Confusion Matrices", "🔍 Feature Importance"])
+            eval_tabs = st.tabs(["🎯 Confusion Matrices"])
             
             with eval_tabs[0]:
-                self.plot_roc_curves()
-                
-            with eval_tabs[1]:
-                self.plot_pr_curves()
-                
-            with eval_tabs[2]:
                 self.plot_confusion_matrices()
-                
-            with eval_tabs[3]:
-                st.subheader("Feature Importance Analysis")
-                tree_models = [name for name in self.results.keys() 
-                             if any(x in name.lower() for x in ['tree', 'forest', 'boost'])]
-                
-                if tree_models:
-                    for model_name in tree_models:
-                        model_result = self.results[model_name]
-                        self.plot_feature_importance(model_result['model'], feature_names, model_name)
-                else:
-                    st.info("📊 No tree-based models available for feature importance analysis.")
             
             st.subheader("💾 Model Export")
             if st.button("Download Best Model", width='content'):
