@@ -113,7 +113,7 @@ class SegmentAnalysisTab:
             for featured_path in possible_paths:
                 if featured_path.exists():
                     self.df = pd.read_csv(featured_path)
-                    #st.success(f"✅ Data loaded from: {featured_path}")
+                    #st.success(f"Data loaded from: {featured_path}")
                     break
             
             if self.df is None:
@@ -129,7 +129,7 @@ class SegmentAnalysisTab:
             
             missing_features = [f for f in required_features if f not in self.df.columns]
             if missing_features:
-                st.error(f"❌ Missing required features: {missing_features}")
+                st.error(f"Missing required features: {missing_features}")
                 return None, None
             
             self.segmenter = EnhancedCustomerSegmenter(n_segments=5)
@@ -139,14 +139,14 @@ class SegmentAnalysisTab:
                 {k: v['segment_name'] for k, v in self.segmenter.segment_profiles.items()}
             )
             
-            st.success("✅ Segmentation completed successfully!")
+            st.success("Segmentation completed successfully!")
             return self.df, self.segmenter
             
         except ImportError as e:
-            st.error(f"❌ Could not import EnhancedCustomerSegmenter: {e}")
+            st.error(f"Could not import EnhancedCustomerSegmenter: {e}")
             return None, None
         except Exception as e:
-            st.error(f"❌ Error in segmentation: {e}")
+            st.error(f"Error in segmentation: {e}")
             import traceback
             st.code(traceback.format_exc())
             return None, None
@@ -199,7 +199,7 @@ class SegmentAnalysisTab:
 
     def render_segment_performance(self):
         """Render segment performance metrics"""
-        create_section("📈 Segment Performance Metrics", "Key Behavioral Indicators")
+        create_section("Segment Performance Metrics", "Key Behavioral Indicators")
         
         if self.segmenter is None or self.df is None:
             return
@@ -229,41 +229,22 @@ class SegmentAnalysisTab:
         
         segments_df = pd.DataFrame(segments_data)
         
-        # Performance comparison
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Abandonment rate comparison
-            fig = px.bar(
-                segments_df,
-                x='Segment',
-                y='Abandonment Rate',
-                title="Abandonment Rate by Segment",
-                color='Abandonment Rate',
-                color_continuous_scale='RdYlGn_r',
-                text='Abandonment Rate'
-            )
-            fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
-            fig.update_layout(showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            # Cart value comparison
-            fig = px.bar(
-                segments_df,
-                x='Segment',
-                y='Avg Cart Value',
-                title="Average Cart Value by Segment",
-                color='Avg Cart Value',
-                color_continuous_scale='Blues',
-                text='Avg Cart Value'
-            )
-            fig.update_traces(texttemplate='₹%{text:.2f}', textposition='outside')
-            fig.update_layout(showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-        
+        # Performance comparison - Abandonment rate only
+        fig = px.bar(
+            segments_df,
+            x='Segment',
+            y='Abandonment Rate',
+            title="Abandonment Rate by Segment",
+            color='Abandonment Rate',
+            color_continuous_scale='RdYlGn_r',
+            text='Abandonment Rate'
+        )
+        fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+                
         # Detailed metrics table
-        st.subheader("📋 Detailed Segment Metrics")
+        st.subheader("Detailed Segment Metrics")
         display_df = segments_df[['Segment', 'Size', 'Abandonment Rate', 'Avg Cart Value', 
                                 'Avg Engagement', 'Return User Rate', 'Recovery Priority', 'Business Value']].copy()
         display_df['Abandonment Rate'] = display_df['Abandonment Rate'].round(1)
@@ -280,7 +261,7 @@ class SegmentAnalysisTab:
         if self.segmenter is None or self.df is None:
             return
         
-        st.subheader("🎯 Segment-Specific Recovery Strategies")
+        st.subheader("Segment-Specific Recovery Strategies")
         
         # Display strategies for each segment
         for segment_id, profile in self.segmenter.segment_profiles.items():
@@ -294,7 +275,7 @@ class SegmentAnalysisTab:
             abandonment_rate = (segment_df['abandoned'].mean() * 100) if segment_size > 0 else 0
             avg_cart_value = segment_df['cart_value'].mean() if segment_size > 0 else 0
             
-            with st.expander(f"📋 {segment_name} - {len(strategy.get('strategies', []))} Strategies", expanded=False):
+            with st.expander(f"{segment_name} - {len(strategy.get('strategies', []))} Strategies", expanded=False):
                 
                 col1, col2 = st.columns([2, 1])
                 
@@ -334,15 +315,15 @@ class SegmentAnalysisTab:
     def run(self):
         
         # Load data and segmenter
-        with st.spinner("🔄 Loading segmentation data and models..."):
+        with st.spinner("Loading segmentation data and models..."):
             self.df, self.segmenter = self.load_data_and_segmenter()
         
         if self.segmenter and self.df is not None:
             # Create tabs for different segmentation views
             seg_tabs = st.tabs([
-                "📊 Overview", 
-                "📈 Performance", 
-                "🛠️ Strategies"
+                "Overview", 
+                "Performance", 
+                "Strategies"
             ])
             
             with seg_tabs[0]:

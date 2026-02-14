@@ -98,3 +98,30 @@ timestamp,session_id,user_id,product_id,product_name,category,event_type
 2025-11-07T00:59:29.145469,S1762457309,U9331,19,Sunglasses,Accessories,add_to_cart
 2025-11-07T00:59:50.299676,S1762457309,U9331,3,Cookware Set,Home & Kitchen,add_to_cart
 2025-11-07T00:59:57.158210,S1762457309,U9331,4,Skincare Kit,Beauty,add_to_cart
+2025-11-07T10:33:45.445242,S1762491802,U3657,10,Laptop,Electronics,add_to_cart
+2025-11-07T10:36:34.223540,S1762491802,U3657,1,Smartphone,Electronics,add_to_cart
+2025-11-07T12:05:53.286434,S1762497341,U3215,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T12:05:57.494902,S1762497341,U3215,15,Backpack,Accessories,add_to_cart
+2025-11-07T12:06:21.402862,S1762497341,U3215,1,Smartphone,Electronics,add_to_cart
+2025-11-07T12:08:48.840839,S1762497519,U8847,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T12:08:52.045061,S1762497519,U8847,1,Smartphone,Electronics,add_to_cart
+2025-11-07T12:08:56.647446,S1762497519,U8847,27,Power Bank,Electronics,add_to_cart
+2025-11-07T12:09:00.288021,S1762497519,U8847,9,Organic Snacks,Groceries,add_to_cart
+2025-11-07T12:43:52.703220,S1762499624,U1139,10,Laptop,Electronics,add_to_cart
+2025-11-07T12:44:02.556353,S1762499624,U1139,13,Jeans,Clothing,add_to_cart
+2025-11-07T12:44:08.457749,S1762499624,U1139,23,Sports Socks,Sports,add_to_cart
+2025-11-07T12:44:34.984172,S1762499666,U9702,1,Smartphone,Electronics,add_to_cart
+2025-11-07T12:44:36.237898,S1762499666,U9702,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T12:44:38.380254,S1762499666,U9702,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-11-07T12:44:40.830418,S1762499666,U9702,12,Phone Case,Electronics,add_to_cart
+2025-11-07T13:23:50.070534,S1762501986,U5535,1,Smartphone,Electronics,add_to_cart
+2025-11-07T14:55:03.678741,S1762504936,U9143,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T14:55:06.467090,S1762504936,U9143,5,Novel Collection,Books,add_to_cart
+2025-11-30T14:50:11.657681,S1764494402,U1005,2,Car Accessories,Automotive,add_to_cart
+2025-11-30T14:50:21.628708,S1764494402,U1005,6,T-Shirt,Clothing,add_to_cart
+2025-11-30T14:50:39.748200,S1764494402,U1005,6,T-Shirt,Clothing,add_to_cart
+2025-11-30T14:50:52.546609,S1764494402,U1005,18,Water Bottle,Sports,add_to_cart
+2025-11-30T15:08:09.286413,S1764495483,U8560,2,Car Accessories,Automotive,add_to_cart
+2025-11-30T15:08:20.974135,S1764495483,U8560,14,Coffee Maker,Home & Kitchen,add_to_cart
+2025-11-30T15:08:29.272811,S1764495483,U8560,6,T-Shirt,Clothing,add_to_cart
+2025-11-30T15:08:37.078305,S1764495483,U8560,9,Organic Snacks,Groceries,add_to_cart

@@ -103,34 +103,34 @@ class EnhancedCustomerSegmenter:
             'Casual Browsers': 0
         }
         
-        # High-Value Loyalists (more lenient thresholds)
+        # High-Value Loyalists
         if rel_cart_value > 0.03: segment_scores['High-Value Loyalists'] += 3
         if rel_return_rate > 3: segment_scores['High-Value Loyalists'] += 2
         if rel_abandonment < -3: segment_scores['High-Value Loyalists'] += 2
         if rel_payment_reach > 5: segment_scores['High-Value Loyalists'] += 1
         if profile['avg_cart_value'] > profile['global_avg_cart_value'] * 1.1: segment_scores['High-Value Loyalists'] += 1
         
-        # At-Risk Converters (more lenient)
+        # At-Risk Converters 
         if rel_cart_value > 0.02: segment_scores['At-Risk Converters'] += 3
         if rel_return_rate < 5: segment_scores['At-Risk Converters'] += 2
         if rel_abandonment > 3: segment_scores['At-Risk Converters'] += 2
         if rel_payment_reach > 3: segment_scores['At-Risk Converters'] += 1
         if profile['payment_reach_rate'] > 40: segment_scores['At-Risk Converters'] += 1
         
-        # Engaged Researchers (more lenient)
+        # Engaged Researchers 
         if rel_engagement > 0.1: segment_scores['Engaged Researchers'] += 3
         if profile['avg_pages_viewed'] > profile['global_avg_pages_viewed'] * 0.9: segment_scores['Engaged Researchers'] += 2
         if profile['shipping_info_view_rate'] > 40: segment_scores['Engaged Researchers'] += 1
         if abs(rel_cart_value) < 0.1: segment_scores['Engaged Researchers'] += 1
         if profile['avg_pages_viewed'] > 5: segment_scores['Engaged Researchers'] += 1
         
-        # Price-Sensitive Shoppers (more lenient)
+        # Price-Sensitive Shoppers 
         if profile['discount_sensitivity'] > 35: segment_scores['Price-Sensitive Shoppers'] += 3
         if rel_cart_value < 0.05: segment_scores['Price-Sensitive Shoppers'] += 2
         if rel_abandonment > 0: segment_scores['Price-Sensitive Shoppers'] += 1
         if profile['discount_sensitivity'] > profile['global_avg_abandonment']: segment_scores['Price-Sensitive Shoppers'] += 1
         
-        # Casual Browsers (more lenient)
+        # Casual Browsers 
         if rel_engagement < 0: segment_scores['Casual Browsers'] += 3
         if rel_cart_value < 0: segment_scores['Casual Browsers'] += 2
         if rel_payment_reach < -5: segment_scores['Casual Browsers'] += 2
@@ -141,7 +141,6 @@ class EnhancedCustomerSegmenter:
         best_segment = max(segment_scores, key=segment_scores.get)
         best_score = segment_scores[best_segment]
         
-        # More lenient assignment: if segment is already taken and score is not very high
         if best_segment in self.assigned_segments and best_score < 5:
             sorted_segments = sorted(segment_scores.items(), key=lambda x: x[1], reverse=True)
             for segment_name, score in sorted_segments:
@@ -150,7 +149,6 @@ class EnhancedCustomerSegmenter:
                     best_score = score
                     break
         
-        # If still no good match, use fallback with force assignment
         if best_score < 2 or best_segment in self.assigned_segments:
             best_segment = self._simplified_segment_fallback(profile, force_assign=True)
             
@@ -208,8 +206,7 @@ class EnhancedCustomerSegmenter:
         # Return first unassigned segment
         for segment in available_segments:
             if segment not in self.assigned_segments:
-                return segment
-        
+                return segment        
         return "Casual Browsers"
     
     def _get_segment_description(self, segment_name):
@@ -294,9 +291,9 @@ class EnhancedCustomerSegmenter:
             }
             
             print(f"📊 {method_name} Evaluation:")
-            print(f"   Silhouette Score: {silhouette:.4f} (higher is better)")
-            print(f"   Calinski-Harabasz: {calinski:.4f} (higher is better)")
-            print(f"   Davies-Bouldin: {davies:.4f} (lower is better)")
+            print(f"   Silhouette Score: {silhouette :.4f} (higher is better)")
+            print(f"   Calinski-Harabasz: {calinski :.4f} (higher is better)")
+            print(f"   Davies-Bouldin: {davies :.4f} (lower is better)")
             
             return evaluation
         except Exception as e:
@@ -343,24 +340,18 @@ class EnhancedCustomerSegmenter:
         np.random.seed(42)
         kmeans_labels, kmeans_centroids, _ = self.kmeans_from_scratch(X, max_iters=50, restarts=3)
         
-        # Initialize means with KMeans centroids
         means = kmeans_centroids.copy()
-        
-        # Initialize covariances as identity matrices
         covariances = np.array([np.eye(n_features) for _ in range(n_components)])
         
-        # Initialize weights uniformly
         weights = np.ones(n_components) / n_components
         
         log_likelihood_old = -np.inf
         
         for iteration in range(max_iters):
-            # E-step: Calculate responsibilities
             responsibilities = np.zeros((n_samples, n_components))
             
             for k in range(n_components):
                 try:
-                    # Calculate multivariate normal PDF
                     diff = X - means[k]
                     cov_inv = np.linalg.inv(covariances[k])
                     cov_det = np.linalg.det(covariances[k])
@@ -370,36 +361,28 @@ class EnhancedCustomerSegmenter:
                     
                     responsibilities[:, k] = weights[k] * normalization * np.exp(exponent)
                 except np.linalg.LinAlgError:
-                    # If covariance is singular, use small identity matrix
                     covariances[k] = np.eye(n_features) * 0.01
                     responsibilities[:, k] = weights[k] * 1e-10
             
-            # Normalize responsibilities
             responsibilities_sum = responsibilities.sum(axis=1, keepdims=True)
             responsibilities_sum[responsibilities_sum == 0] = 1e-10
             responsibilities /= responsibilities_sum
             
-            # M-step: Update parameters
             Nk = responsibilities.sum(axis=0)
             
-            # Update weights
             weights = Nk / n_samples
             
-            # Update means
             for k in range(n_components):
                 means[k] = (responsibilities[:, k, np.newaxis] * X).sum(axis=0) / (Nk[k] + 1e-10)
             
-            # Update covariances
             for k in range(n_components):
                 diff = X - means[k]
                 cov = (responsibilities[:, k, np.newaxis, np.newaxis] * 
                        diff[:, :, np.newaxis] @ diff[:, np.newaxis, :]).sum(axis=0)
                 covariances[k] = cov / (Nk[k] + 1e-10)
                 
-                # Add regularization to avoid singular matrices
                 covariances[k] += np.eye(n_features) * 1e-6
             
-            # Calculate log-likelihood
             log_likelihood = 0
             for k in range(n_components):
                 try:
@@ -414,13 +397,11 @@ class EnhancedCustomerSegmenter:
                 except:
                     pass
             
-            # Check convergence
             if abs(log_likelihood - log_likelihood_old) < tol:
                 break
             
             log_likelihood_old = log_likelihood
         
-        # Get final labels
         labels = np.argmax(responsibilities, axis=1)
         
         # Store parameters for prediction
@@ -435,51 +416,41 @@ class EnhancedCustomerSegmenter:
         n_samples = X.shape[0]
         
         print(f"   Computing distances for {n_samples} samples...")
-        # Step 1: Calculate pairwise distances (vectorized)
         distances = cdist(X, X, metric='euclidean')
         
-        # Step 2: Calculate core distances (vectorized)
         print(f"   Calculating core distances...")
         sorted_dists = np.sort(distances, axis=1)
         core_distances = sorted_dists[:, min_samples]
         
-        # Step 3: Calculate mutual reachability distance (vectorized)
         print(f"   Computing mutual reachability distances...")
         core_dist_matrix = np.maximum(core_distances[:, np.newaxis], core_distances)
         mutual_reach_dist = np.maximum(core_dist_matrix, distances)
         
-        # Step 4: Build Minimum Spanning Tree using Prim's algorithm (optimized)
         print(f"   Building Minimum Spanning Tree...")
         mst_edges = []
         visited = np.zeros(n_samples, dtype=bool)
         visited[0] = True
         
-        # Keep track of minimum distances to unvisited nodes
         min_distances = mutual_reach_dist[0].copy()
         min_distances[0] = np.inf
         
         for _ in range(n_samples - 1):
-            # Find unvisited node with minimum distance
             unvisited_mask = ~visited
             min_distances[visited] = np.inf
             min_j = np.argmin(min_distances)
             min_dist = min_distances[min_j]
             
-            # Find which visited node this connects to
             visited_indices = np.where(visited)[0]
             min_i = visited_indices[np.argmin(mutual_reach_dist[visited_indices, min_j])]
             
             mst_edges.append((min_i, min_j, min_dist))
             visited[min_j] = True
             
-            # Update minimum distances
             min_distances = np.minimum(min_distances, mutual_reach_dist[min_j])
         
         print(f"   Extracting clusters...")
-        # Step 5: Sort edges by distance
         mst_edges.sort(key=lambda x: x[2])
         
-        # Step 6: Use union-find to extract clusters
         parent = np.arange(n_samples)
         cluster_size = np.ones(n_samples, dtype=int)
         
@@ -497,18 +468,15 @@ class EnhancedCustomerSegmenter:
                 cluster_size[root_x] += cluster_size[root_y]
             return cluster_size[root_x]
         
-        # Step 7: Form clusters by processing edges
         labels = np.full(n_samples, -1, dtype=int)
         current_cluster = 0
         cluster_formed = np.zeros(n_samples, dtype=bool)
         
-        # Process edges from lowest to highest distance
         for i, j, dist in mst_edges:
             root_i, root_j = find(i), find(j)
             size = union(i, j)
             new_root = find(i)
             
-            # If cluster is large enough and hasn't been labeled yet
             if size >= min_cluster_size and not cluster_formed[new_root]:
                 cluster_formed[new_root] = True
                 # Label all points in this cluster
@@ -517,7 +485,6 @@ class EnhancedCustomerSegmenter:
                         labels[k] = current_cluster
                 current_cluster += 1
         
-        # Assign noise points to nearest cluster (vectorized)
         noise_mask = labels == -1
         if np.any(noise_mask):
             labeled_mask = labels != -1
@@ -525,12 +492,10 @@ class EnhancedCustomerSegmenter:
                 noise_indices = np.where(noise_mask)[0]
                 labeled_indices = np.where(labeled_mask)[0]
                 
-                # Calculate distances from noise points to labeled points
                 noise_to_labeled_dist = distances[np.ix_(noise_indices, labeled_indices)]
                 nearest_labeled = labeled_indices[np.argmin(noise_to_labeled_dist, axis=1)]
                 labels[noise_indices] = labels[nearest_labeled]
         
-        # Store for prediction
         self.hdbscan_data = X
         self.hdbscan_labels = labels
         

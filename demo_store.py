@@ -6,6 +6,7 @@ import os
 import math
 import time
 import json
+from apriori import AprioriRecommender
 
 # Page config
 st.set_page_config(
@@ -221,9 +222,8 @@ class DirectRuleBasedSegmenter:
             print(f"❌ Direct segmentation error: {e}")
             return "Casual Browsers"
 
-# ============================================================================
 # RECOVERY STRATEGY MANAGER
-# ============================================================================
+
 class RecoveryStrategyManager:
     
     def __init__(self):
@@ -437,96 +437,7 @@ class RecoveryStrategyManager:
         
         return actions
 
-class AprioriRecommender:
-    def __init__(self):
-        self.rules = self._generate_sample_rules()
-        self.product_dict = {p['name']: p for p in PRODUCTS}  # Changed to name-based lookup
-    
-    def _generate_sample_rules(self):
-        return [
-            # Enhanced single product rules
-            ({"Smartphone"}, {"Phone Case", "Wireless Earbuds", "Screen Protector", "Power Bank"}, 0.75),
-            ({"Laptop"}, {"Backpack", "Wireless Mouse", "Laptop Sleeve", "Screen Protector"}, 0.65),
-            ({"Running Shoes"}, {"Fitness Tracker", "Sports Socks", "Water Bottle", "Sports Bag"}, 0.60),
-            ({"T-Shirt"}, {"Jeans", "Sunglasses", "Watch", "Sports Socks"}, 0.55),
-            ({"Cookware Set"}, {"Desk Lamp", "Kitchen Utensils", "Coffee Maker", "Coffee Beans"}, 0.45),
-            ({"Skincare Kit"}, {"Sunglasses", "Face Mask", "Watch", "Sports Socks"}, 0.50),
-            ({"Coffee Maker"}, {"Water Bottle", "Coffee Beans", "Desk Lamp", "Kitchen Utensils"}, 0.40),
-            ({"Backpack"}, {"Water Bottle", "Power Bank", "Laptop Sleeve", "Wireless Mouse"}, 0.35),
-            ({"Wireless Earbuds"}, {"Phone Case", "Power Bank", "Screen Protector", "Sports Bag"}, 0.55),
-            ({"Bluetooth Speaker"}, {"Power Bank", "Wireless Earbuds", "Phone Case", "Backpack"}, 0.48),
-            
-            # Multi-product rules
-            ({"Smartphone", "Laptop"}, {"Bluetooth Speaker", "Power Bank", "Wireless Mouse", "Backpack"}, 0.70),
-            ({"T-Shirt", "Jeans"}, {"Sunglasses", "Watch", "Sports Socks", "Backpack"}, 0.60),
-            ({"Running Shoes", "Fitness Tracker"}, {"Water Bottle", "Sports Bag", "Sports Socks", "Watch"}, 0.55),
-            ({"Coffee Maker", "Desk Lamp"}, {"Coffee Beans", "Water Bottle", "Kitchen Utensils", "Face Mask"}, 0.42)
-        ]
-    def get_recommendations(self, current_items, top_n=4):
-        recommendations = set()
-        current_item_names = {item['name'] for item in current_items}
-        
-        # Strategy 1: Exact rule matching
-        for antecedent, consequent, confidence in self.rules:
-            if antecedent.issubset(current_item_names):
-                recommendations.update(consequent - current_item_names)
-        
-        # Strategy 2: Category-based recommendations 
-        if not recommendations and current_items:
-            current_categories = {item['category'] for item in current_items}
-            category_products = [
-                p for p in PRODUCTS 
-                if p['category'] in current_categories 
-                and p['name'] not in current_item_names
-            ]
-            for product in category_products[:2]:
-                recommendations.add(product['name'])
-        
-        # Strategy 3: Popular products 
-        if not recommendations:
-            popular_products = ["Phone Case", "Wireless Earbuds", "Backpack", "Water Bottle"]
-            for product_name in popular_products:
-                if product_name not in current_item_names:
-                    recommendations.add(product_name)
-                    if len(recommendations) >= top_n:
-                        break
-        
-        recommended_products = []
-        for product_name in list(recommendations)[:top_n]:
-            if product_name in self.product_dict:
-                recommended_products.append(self.product_dict[product_name])
-        
-        return recommended_products
-    
-    def get_frequently_bought_together(self, product, top_n=3):
-        product_name = product['name']
-        recommendations = set()
-        
-        for antecedent, consequent, confidence in self.rules:
-            if product_name in antecedent:
-                other_products = consequent - {product_name}
-                recommendations.update(other_products)
-    
-        if not recommendations:
-            same_category = [
-                p for p in PRODUCTS 
-                if p['category'] == product['category'] 
-                and p['name'] != product_name
-            ]
-            for p in same_category[:top_n]:
-                recommendations.add(p['name'])
-        
-        result_products = []
-        for product_name in list(recommendations)[:top_n]:
-            if product_name in self.product_dict:
-                result_products.append(self.product_dict[product_name])
-        
-        return result_products
-    
-# ============================================================================
 # INITIALIZATION
-# ============================================================================
-
 if 'session_data' not in st.session_state:
     st.session_state.session_data = {
         'session_id': f"S{int(time.time())}",
@@ -563,11 +474,42 @@ if 'viewing_product' not in st.session_state:
 if 'promo_message' not in st.session_state:
     st.session_state.promo_message = None
 
-if 'recommender' not in st.session_state:
-    st.session_state.recommender = AprioriRecommender()
+# ============================================================================
+# INITIALIZE REAL APRIORI RECOMMENDER ✅
+# ============================================================================
 
+if 'recommender' not in st.session_state:
+    print("🔄 Initializing Real Apriori Recommender...")
+    
+    # Create instance with tuned parameters
+    st.session_state.recommender = AprioriRecommender(
+        min_support=0.02,      # 2% minimum support
+        min_confidence=0.3,    # 30% confidence
+        min_lift=1.0          # Positive correlation only
+    )
+    
+    # CRITICAL: Set product catalog
+    st.session_state.recommender.set_product_catalog(PRODUCTS)
+    
+    # Try loading pre-trained model, otherwise train fresh
+    model_loaded = st.session_state.recommender.load_model('data/apriori_model.json')
+    
+    if not model_loaded:
+        print("📚 No saved model found. Training from scratch...")
+        st.session_state.recommender.train()
+        # Save for next time
+        st.session_state.recommender.save_model('data/apriori_model.json')
+    else:
+        print("✅ Loaded pre-trained model!")
+    
+    # Optional: Print rules for debugging (comment out in production)
+    if st.session_state.recommender.rules:
+        st.session_state.recommender.print_rules(top_n=5)
+
+# Initialize other components
 st.session_state.segmenter = DirectRuleBasedSegmenter()
 recovery_manager = RecoveryStrategyManager()
+
 
 # ============================================================================
 # HELPER FUNCTIONS (UPDATED WITH PREPROCESSING)
@@ -777,7 +719,6 @@ def calculate_raw_features(abandoned):
     pca1 = np.random.normal(0, 1)
     pca2 = np.random.normal(0, 1)
     
-    # RAW features with ALL feature engineering (before preprocessing)
     raw_features = {
         'session_id': st.session_state.session_data['session_id'],
         'user_id': st.session_state.session_data['user_id'],
@@ -1389,14 +1330,14 @@ def main():
         
         # Show preprocessing status
         if preprocessing_loaded:
-            st.success("✅ Features are preprocessed using the same transformations as training data")
+            st.success("Features are preprocessed using the same transformations as training data")
         else:
-            st.warning("⚠️ Using fallback preprocessing - run preprocessing script for exact transformations")
+            st.warning("Using fallback preprocessing - run preprocessing script for exact transformations")
         
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
-                label="📥 Download Current Features",
+                label="Download Current Features",
                 data=features_df.to_csv(index=False),
                 file_name=f"session_features_{st.session_state.session_data['session_id']}.csv",
                 mime="text/csv"

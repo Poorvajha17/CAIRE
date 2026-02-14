@@ -615,8 +615,8 @@ class AdminDashboard:
         self.tabs = [
             AdminDashboardTab(),
             PredictionTab(),
-            SegmentAnalysisTab(),
-            AdvancedAnalyticsTab()
+            SegmentAnalysisTab()
+            # AdvancedAnalyticsTab()
         ]
 
     def run(self):
